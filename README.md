@@ -257,5 +257,5 @@ When using the web app, you can:
 MIT
 
 ## Author
+@alexdni
 
-Built with Claude Code
