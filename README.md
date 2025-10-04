@@ -1,6 +1,6 @@
 # Candidate Ranking System
 
-AI-powered resume screening system for identifying qualified candidates based on React Native, EEG/EKG/DSP, and Biomedical engineering expertise.
+AI-powered resume screening system with customizable criteria for identifying qualified candidates based on your specific job requirements.
 
 ## Project Overview
 
@@ -18,6 +18,7 @@ This project consists of two main components:
 │                     Web Application                          │
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │  Frontend (React Native Web + Tailwind CSS)            │ │
+│  │  - Dynamic Criteria Configuration (1-5 criteria)       │ │
 │  │  - File Upload Interface                               │ │
 │  │  - Real-time Candidate Ranking Display                 │ │
 │  │  - Summary Statistics Dashboard                        │ │
@@ -33,7 +34,7 @@ This project consists of two main components:
 │  │  Business Logic Layer                                  │ │
 │  │  - PDF Text Extraction (pdf-parse)                     │ │
 │  │  - Cover Letter Detection & Removal                    │ │
-│  │  - AI Analysis (OpenAI GPT-4)                          │ │
+│  │  - AI Analysis (OpenAI GPT-4 with dynamic prompts)     │ │
 │  │  - Secondary Validation (keyword matching)             │ │
 │  └────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
@@ -41,37 +42,42 @@ This project consists of two main components:
 
 ### Resume Analysis Pipeline
 
-1. **PDF Ingestion**
+1. **Criteria Definition**
+   - User defines 1-5 custom screening criteria
+   - Each criterion includes:
+     - Name (e.g., "React Native")
+     - Description (e.g., "Must have explicit React Native experience")
+     - Optional validation keywords (e.g., ["react native", "react-native"])
+
+2. **PDF Ingestion**
    - Accept PDF uploads (max 10MB)
    - Store originals in Vercel Blob Storage
    - Extract text using pdf-parse library
 
-2. **Text Preprocessing**
+3. **Text Preprocessing**
    - Detect cover letters using keyword analysis
    - Skip cover letter pages if detected
    - Limit extraction to first 15,000 characters
 
-3. **AI Analysis (Primary)**
+4. **AI Analysis (Primary)**
    - Send preprocessed text to OpenAI GPT-4
+   - Dynamically generate prompt from user-defined criteria
    - Use conservative prompt engineering
    - Extract structured JSON response with:
-     - `react_native`: boolean
-     - `eeg_ekg_dsp`: boolean
-     - `biomedical`: boolean
+     - `criteria`: object with boolean values for each criterion
      - `summary`: one-sentence qualification summary
 
-4. **Validation (Secondary)**
+5. **Validation (Secondary)**
    - Cross-check AI results against raw text
-   - Verify React Native mentions (not just "React")
-   - Confirm medical + signal processing co-occurrence for EEG/EKG/DSP
-   - Validate biomedical engineering keywords
-   - Override false positives
+   - For each criterion with keywords defined:
+     - Verify at least one keyword appears in resume
+     - Override false positives from AI
 
-5. **Ranking & Display**
-   - Calculate qualifications count (0-3)
+6. **Ranking & Display**
+   - Calculate qualifications count (0 to N criteria)
    - Sort candidates by count (descending)
-   - Highlight top candidates (2+ qualifications)
-   - Display summary statistics
+   - Highlight top candidates (50%+ qualifications)
+   - Display dynamic summary statistics for each criterion
 
 ### Technology Stack
 
@@ -153,9 +159,16 @@ python screening.py
 - **Python CLI**: Fast batch processing for local environments, works with local LLMs (LM Studio)
 - **Web App**: User-friendly interface, scalable cloud deployment, real-time results
 
+### Why Dynamic Criteria System?
+
+- **Flexibility**: Adapt screening to any job role or requirement
+- **Customization**: Define 1-5 criteria specific to your needs
+- **Validation**: Optional keywords prevent AI hallucinations
+- **Scalability**: No code changes needed for different screening scenarios
+
 ### Why OpenAI + Validation?
 
-- **AI Analysis**: Understands context, interprets experience descriptions
+- **AI Analysis**: Understands context, interprets experience descriptions dynamically
 - **Keyword Validation**: Catches hallucinations, enforces strict requirements
 - **Hybrid Approach**: Combines AI flexibility with rule-based reliability
 
@@ -173,32 +186,43 @@ python screening.py
 - Zero-config deployment
 - Edge network for global performance
 
-## Qualification Criteria
+## Screening Criteria
 
-### React Native ✓
-- Explicit "React Native" or "react-native" mentions required
-- React.js alone does not qualify
-- Mobile app development experience
+### Dynamic Criteria System
 
-### EEG/EKG/DSP ✓
-- Medical signal terms: EEG, EKG, electrocardiogram, electroencephalogram
-- AND processing terms: signal processing, DSP, filter design, feature extraction
-- Both categories required
+The web application supports **1-5 custom criteria** that you define per screening session. Default criteria include:
 
-### Biomedical Engineering ✓
-- Biomedical engineering degree
-- Medical device development
-- FDA regulations experience
-- Clinical trial involvement
-- Physiological monitoring systems
+#### React Native ✓
+- **Description**: Must have explicit React Native experience (not just React/JavaScript)
+- **Keywords**: react native, react-native
+- **Validation**: Explicit mentions required; React.js alone does not qualify
+
+#### EEG/EKG/DSP ✓
+- **Description**: Signal processing experience with medical applications (EEG, EKG, biomedical signals)
+- **Keywords**: eeg, ekg, electrocardiogram, electroencephalogram, signal processing, dsp
+- **Validation**: Medical signal terms AND processing terms both required
+
+#### Biomedical Engineering ✓
+- **Description**: Biomedical engineering degree, medical device development, or clinical experience
+- **Keywords**: biomedical engineering, medical device, fda regulations, clinical trial
+- **Validation**: At least one biomedical-specific keyword required
+
+### Creating Custom Criteria
+
+When using the web app, you can:
+1. Define your own criteria names and descriptions
+2. Add optional validation keywords (comma-separated)
+3. Mix and match up to 5 criteria for any role
+4. Examples: "Python expertise", "Cloud architecture (AWS/Azure)", "Machine learning", "Leadership experience"
 
 ## Output & Results
 
 ### Web Application
 - Real-time candidate ranking display
-- Visual qualification badges
-- Summary statistics dashboard
-- Sortable by qualifications count
+- Dynamic visual qualification badges based on defined criteria
+- Summary statistics dashboard showing counts for each criterion
+- Automatic sorting by qualifications count (descending)
+- Color-coded highlighting for top candidates
 
 ### CLI Tool
 - CSV report with columns:
@@ -220,11 +244,13 @@ python screening.py
 
 - [ ] Bulk resume upload (zip files)
 - [ ] Export results to CSV/PDF
-- [ ] Customizable qualification criteria
+- [x] ~~Customizable qualification criteria~~ ✅ **Completed**
+- [ ] Save/load criteria templates
 - [ ] Interview scheduling integration
 - [ ] Candidate profile pages
 - [ ] Email notifications
 - [ ] Multi-tenant support
+- [ ] Batch processing API endpoint
 
 ## License
 
