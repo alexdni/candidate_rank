@@ -3,25 +3,51 @@
 import { useMemo } from 'react';
 import { View, Text, ScrollView } from 'react-native-web';
 import { Candidate } from '../page';
+import { Criterion } from '@/lib/resumeAnalyzer';
 
 interface CandidateRankingProps {
   candidates: Candidate[];
+  criteria: Criterion[];
 }
 
-export default function CandidateRanking({ candidates }: CandidateRankingProps) {
+const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+
+export default function CandidateRanking({ candidates, criteria }: CandidateRankingProps) {
   const sortedCandidates = useMemo(() => {
     return [...candidates].sort((a, b) => b.qualificationsCount - a.qualificationsCount);
   }, [candidates]);
 
-  const categories = useMemo(() => {
-    const reactNative = candidates.filter(c => c.react_native).length;
-    const eegEkgDsp = candidates.filter(c => c.eeg_ekg_dsp).length;
-    const biomedical = candidates.filter(c => c.biomedical).length;
-    const twoOrMore = candidates.filter(c => c.qualificationsCount >= 2).length;
-    const allThree = candidates.filter(c => c.qualificationsCount === 3).length;
+  const criteriaStats = useMemo(() => {
+    return criteria.map(criterion => ({
+      id: criterion.id,
+      name: criterion.name,
+      count: candidates.filter(c => c.criteria[criterion.id]).length,
+      color: COLORS[criteria.indexOf(criterion) % COLORS.length],
+    }));
+  }, [candidates, criteria]);
 
-    return { reactNative, eegEkgDsp, biomedical, twoOrMore, allThree };
-  }, [candidates]);
+  const multiQualStats = useMemo(() => {
+    const totalCriteria = criteria.length;
+    const stats: { label: string; count: number; threshold: number }[] = [];
+
+    if (totalCriteria >= 2) {
+      stats.push({
+        label: `${Math.ceil(totalCriteria / 2)}+ Criteria`,
+        count: candidates.filter(c => c.qualificationsCount >= Math.ceil(totalCriteria / 2)).length,
+        threshold: Math.ceil(totalCriteria / 2),
+      });
+    }
+
+    if (totalCriteria >= 3) {
+      stats.push({
+        label: `All ${totalCriteria} Criteria`,
+        count: candidates.filter(c => c.qualificationsCount === totalCriteria).length,
+        threshold: totalCriteria,
+      });
+    }
+
+    return stats;
+  }, [candidates, criteria]);
 
   const QualificationBadge = ({ label, active }: { label: string; active: boolean }) => (
     <View
@@ -48,11 +74,12 @@ export default function CandidateRanking({ candidates }: CandidateRankingProps) 
           Summary Statistics
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
-          <StatCard label="React Native" count={categories.reactNative} color="#3b82f6" />
-          <StatCard label="EEG/EKG/DSP" count={categories.eegEkgDsp} color="#8b5cf6" />
-          <StatCard label="Biomedical" count={categories.biomedical} color="#ec4899" />
-          <StatCard label="2+ Qualifications" count={categories.twoOrMore} color="#f59e0b" />
-          <StatCard label="All 3 Qualifications" count={categories.allThree} color="#10b981" />
+          {criteriaStats.map(stat => (
+            <StatCard key={stat.id} label={stat.name} count={stat.count} color={stat.color} />
+          ))}
+          {multiQualStats.map(stat => (
+            <StatCard key={stat.label} label={stat.label} count={stat.count} color="#f59e0b" />
+          ))}
         </View>
       </View>
 
@@ -62,66 +89,76 @@ export default function CandidateRanking({ candidates }: CandidateRankingProps) 
           Ranked Candidates
         </Text>
 
-        {sortedCandidates.map((candidate, index) => (
-          <View
-            key={index}
-            style={{
-              borderWidth: 1,
-              borderColor: candidate.qualificationsCount === 3 ? '#10b981' : candidate.qualificationsCount >= 2 ? '#f59e0b' : '#e5e7eb',
-              borderRadius: 8,
-              padding: 16,
-              marginBottom: 12,
-              backgroundColor: candidate.qualificationsCount === 3 ? '#f0fdf4' : candidate.qualificationsCount >= 2 ? '#fffbeb' : 'white',
-            }}
-          >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 16,
-                    backgroundColor: candidate.qualificationsCount === 3 ? '#10b981' : candidate.qualificationsCount >= 2 ? '#f59e0b' : '#6b7280',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 12,
-                  }}
-                >
-                  <Text style={{ color: 'white', fontWeight: '700', fontSize: 16 }}>
-                    {index + 1}
+        {sortedCandidates.map((candidate, index) => {
+          const totalCriteria = criteria.length;
+          const isTopCandidate = candidate.qualificationsCount === totalCriteria;
+          const isStrongCandidate = candidate.qualificationsCount >= Math.ceil(totalCriteria / 2);
+
+          return (
+            <View
+              key={index}
+              style={{
+                borderWidth: 1,
+                borderColor: isTopCandidate ? '#10b981' : isStrongCandidate ? '#f59e0b' : '#e5e7eb',
+                borderRadius: 8,
+                padding: 16,
+                marginBottom: 12,
+                backgroundColor: isTopCandidate ? '#f0fdf4' : isStrongCandidate ? '#fffbeb' : 'white',
+              }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      backgroundColor: isTopCandidate ? '#10b981' : isStrongCandidate ? '#f59e0b' : '#6b7280',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 12,
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontWeight: '700', fontSize: 16 }}>
+                      {index + 1}
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: '#1f2937' }}>
+                    {candidate.name}
                   </Text>
                 </View>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#1f2937' }}>
-                  {candidate.name}
+                <View
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 4,
+                    borderRadius: 6,
+                    backgroundColor: isTopCandidate ? '#10b981' : isStrongCandidate ? '#f59e0b' : '#6b7280',
+                  }}
+                >
+                  <Text style={{ color: 'white', fontSize: 12, fontWeight: '700' }}>
+                    {candidate.qualificationsCount}/{totalCriteria} Criteria
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 }}>
+                {criteria.map(criterion => (
+                  <QualificationBadge
+                    key={criterion.id}
+                    label={criterion.name}
+                    active={candidate.criteria[criterion.id] || false}
+                  />
+                ))}
+              </View>
+
+              <View style={{ backgroundColor: '#f9fafb', padding: 12, borderRadius: 6 }}>
+                <Text style={{ fontSize: 14, color: '#4b5563', lineHeight: 20 }}>
+                  {candidate.summary}
                 </Text>
               </View>
-              <View
-                style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 4,
-                  borderRadius: 6,
-                  backgroundColor: candidate.qualificationsCount === 3 ? '#10b981' : candidate.qualificationsCount >= 2 ? '#f59e0b' : '#6b7280',
-                }}
-              >
-                <Text style={{ color: 'white', fontSize: 12, fontWeight: '700' }}>
-                  {candidate.qualificationsCount}/3 Qualifications
-                </Text>
-              </View>
             </View>
-
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 }}>
-              <QualificationBadge label="React Native" active={candidate.react_native} />
-              <QualificationBadge label="EEG/EKG/DSP" active={candidate.eeg_ekg_dsp} />
-              <QualificationBadge label="Biomedical" active={candidate.biomedical} />
-            </View>
-
-            <View style={{ backgroundColor: '#f9fafb', padding: 12, borderRadius: 6 }}>
-              <Text style={{ fontSize: 14, color: '#4b5563', lineHeight: 20 }}>
-                {candidate.summary}
-              </Text>
-            </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );

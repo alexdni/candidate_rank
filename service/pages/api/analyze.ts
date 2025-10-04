@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { extractTextFromPDF } from '@/lib/pdfExtractor';
-import { analyzeResume, validateAnalysis, calculateQualificationsCount, CandidateResult } from '@/lib/resumeAnalyzer';
+import { analyzeResume, validateAnalysis, calculateQualificationsCount, CandidateResult, Criterion } from '@/lib/resumeAnalyzer';
 
 export const config = {
   api: {
@@ -16,10 +16,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { filename, fileData } = req.body;
+    const { filename, fileData, criteria } = req.body;
 
-    if (!filename || !fileData) {
-      return res.status(400).json({ error: 'Missing filename or fileData' });
+    if (!filename || !fileData || !criteria || !Array.isArray(criteria)) {
+      return res.status(400).json({ error: 'Missing filename, fileData, or criteria' });
+    }
+
+    if (criteria.length === 0 || criteria.length > 5) {
+      return res.status(400).json({ error: 'Criteria must have between 1 and 5 items' });
     }
 
     // Convert base64 to buffer
@@ -34,17 +38,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Analyze resume
-    let analysis = await analyzeResume(text);
-    analysis = validateAnalysis(text, analysis);
+    let analysis = await analyzeResume(text, criteria as Criterion[]);
+    analysis = validateAnalysis(text, analysis, criteria as Criterion[]);
 
     // Create candidate result
     const candidate: CandidateResult = {
       name: filename.replace('.pdf', ''),
-      react_native: analysis.react_native,
-      eeg_ekg_dsp: analysis.eeg_ekg_dsp,
-      biomedical: analysis.biomedical,
+      criteria: analysis.criteria,
       summary: analysis.summary,
-      qualificationsCount: calculateQualificationsCount(analysis),
+      qualificationsCount: calculateQualificationsCount(analysis.criteria),
     };
 
     return res.status(200).json(candidate);

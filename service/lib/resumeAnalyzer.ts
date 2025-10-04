@@ -1,14 +1,21 @@
 import OpenAI from 'openai';
 
+export interface Criterion {
+  id: string;
+  name: string;
+  description: string;
+  keywords?: string[];
+}
+
 export interface ResumeAnalysis {
-  react_native: boolean;
-  eeg_ekg_dsp: boolean;
-  biomedical: boolean;
+  criteria: Record<string, boolean>;
   summary: string;
 }
 
-export interface CandidateResult extends ResumeAnalysis {
+export interface CandidateResult {
   name: string;
+  criteria: Record<string, boolean>;
+  summary: string;
   qualificationsCount: number;
 }
 
@@ -36,23 +43,24 @@ function parseJSONResponse(responseText: string): ResumeAnalysis {
   }
 }
 
-export async function analyzeResume(text: string): Promise<ResumeAnalysis> {
-  const prompt = `Analyze this resume and respond in JSON format. Check for:
-1. React Native experience - must include explicit "React Native" mentions (not just React/JavaScript)
-2. EEG/EKG/DSP processing - look for signal processing terms paired with medical applications
-3. Biomedical engineering - degree, medical devices, or clinical collaborations
+export async function analyzeResume(text: string, criteria: Criterion[]): Promise<ResumeAnalysis> {
+  const criteriaList = criteria.map((c, i) => `${i + 1}. ${c.name} - ${c.description}`).join('\n');
+  const criteriaFields = criteria.map(c => `    "${c.id}": boolean`).join(',\n');
+
+  const prompt = `Analyze this resume and respond in JSON format. Check for the following criteria:
+${criteriaList}
 
 Important rules:
-- React experience alone doesn't count as React Native
-- General programming terms don't count as DSP experience
+- Be specific and look for explicit mentions or clear evidence
 - School projects count if substantial (3+ months)
 - Be conservative - only mark true if clear evidence exists
+- Don't make assumptions based on general skills
 
 Return format:
 {
-    "react_native": boolean,
-    "eeg_ekg_dsp": boolean,
-    "biomedical": boolean,
+    "criteria": {
+${criteriaFields}
+    },
     "summary": "1-sentence qualification summary"
 }
 
@@ -80,50 +88,26 @@ ${text}
   return parseJSONResponse(responseText);
 }
 
-export function validateAnalysis(text: string, analysis: ResumeAnalysis): ResumeAnalysis {
+export function validateAnalysis(
+  text: string,
+  analysis: ResumeAnalysis,
+  criteria: Criterion[]
+): ResumeAnalysis {
   const textLower = text.toLowerCase();
 
-  // React Native validation
-  if (analysis.react_native) {
-    if (!textLower.includes('react native') && !textLower.includes('react-native')) {
-      analysis.react_native = false;
+  // Validate each criterion using its keywords if provided
+  criteria.forEach(criterion => {
+    if (analysis.criteria[criterion.id] && criterion.keywords && criterion.keywords.length > 0) {
+      const hasKeyword = criterion.keywords.some(keyword => textLower.includes(keyword.toLowerCase()));
+      if (!hasKeyword) {
+        analysis.criteria[criterion.id] = false;
+      }
     }
-  }
-
-  // EEG/EKG/DSP validation
-  if (analysis.eeg_ekg_dsp) {
-    const medicalTerms = ['eeg', 'ekg', 'electrocardiogram', 'electroencephalogram', 'biomedical signals'];
-    const processingTerms = ['signal processing', 'dsp', 'filter design', 'feature extraction'];
-
-    const hasMedical = medicalTerms.some(term => textLower.includes(term));
-    const hasProcessing = processingTerms.some(term => textLower.includes(term));
-
-    if (!(hasMedical && hasProcessing)) {
-      analysis.eeg_ekg_dsp = false;
-    }
-  }
-
-  // Biomedical validation
-  if (analysis.biomedical) {
-    const bioTerms = [
-      'biomedical engineering',
-      'medical device',
-      'fda regulations',
-      'clinical trial',
-      'physiological monitoring'
-    ];
-    if (!bioTerms.some(term => textLower.includes(term))) {
-      analysis.biomedical = false;
-    }
-  }
+  });
 
   return analysis;
 }
 
-export function calculateQualificationsCount(analysis: ResumeAnalysis): number {
-  return [
-    analysis.react_native,
-    analysis.eeg_ekg_dsp,
-    analysis.biomedical
-  ].filter(Boolean).length;
+export function calculateQualificationsCount(criteria: Record<string, boolean>): number {
+  return Object.values(criteria).filter(Boolean).length;
 }

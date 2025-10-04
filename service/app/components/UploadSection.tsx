@@ -6,9 +6,10 @@ import { View, Text, TouchableOpacity } from 'react-native-web';
 interface UploadSectionProps {
   onFilesUploaded: (files: File[]) => void;
   isProcessing: boolean;
+  disabled?: boolean;
 }
 
-export default function UploadSection({ onFilesUploaded, isProcessing }: UploadSectionProps) {
+export default function UploadSection({ onFilesUploaded, isProcessing, disabled }: UploadSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,30 +69,27 @@ export default function UploadSection({ onFilesUploaded, isProcessing }: UploadS
 
         <TouchableOpacity
           onPress={handleButtonClick}
-          disabled={isProcessing}
+          disabled={isProcessing || disabled}
           style={{
-            backgroundColor: isProcessing ? '#9ca3af' : '#3b82f6',
+            backgroundColor: (isProcessing || disabled) ? '#9ca3af' : '#3b82f6',
             paddingHorizontal: 24,
             paddingVertical: 12,
             borderRadius: 8,
           }}
         >
           <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
-            {isProcessing ? 'Processing...' : 'Select Files'}
+            {isProcessing ? 'Processing...' : disabled ? 'Complete Criteria First' : 'Select Files'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      <View style={{ marginTop: 16, backgroundColor: '#f3f4f6', padding: 12, borderRadius: 6 }}>
-        <Text style={{ fontSize: 14, color: '#4b5563', fontWeight: '600', marginBottom: 4 }}>
-          What we look for:
-        </Text>
-        <Text style={{ fontSize: 13, color: '#6b7280' }}>
-          • React Native development experience{'\n'}
-          • EEG/EKG/DSP signal processing expertise{'\n'}
-          • Biomedical engineering background
-        </Text>
-      </View>
+      {disabled && (
+        <View style={{ marginTop: 16, backgroundColor: '#fef3c7', padding: 12, borderRadius: 6, borderWidth: 1, borderColor: '#fbbf24' }}>
+          <Text style={{ fontSize: 14, color: '#92400e', fontWeight: '600' }}>
+            ⚠️ Please define at least one criterion with name and description before uploading resumes.
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
