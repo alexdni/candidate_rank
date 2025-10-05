@@ -10,7 +10,7 @@ interface CriteriaInputProps {
 }
 
 export default function CriteriaInput({ criteria, onCriteriaChange }: CriteriaInputProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const addCriterion = () => {
     if (criteria.length >= 5) return;

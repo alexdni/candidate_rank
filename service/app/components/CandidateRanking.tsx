@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
-import { View, Text, ScrollView } from 'react-native-web';
+import { useMemo, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native-web';
 import { Candidate } from '../page';
 import { Criterion } from '@/lib/resumeAnalyzer';
+import PDFModal from './PDFModal';
 
 interface CandidateRankingProps {
   candidates: Candidate[];
@@ -13,6 +14,7 @@ interface CandidateRankingProps {
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
 
 export default function CandidateRanking({ candidates, criteria }: CandidateRankingProps) {
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const sortedCandidates = useMemo(() => {
     return [...candidates].sort((a, b) => b.qualificationsCount - a.qualificationsCount);
   }, [candidates]);
@@ -123,9 +125,11 @@ export default function CandidateRanking({ candidates, criteria }: CandidateRank
                       {index + 1}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: '#1f2937' }}>
-                    {candidate.name}
-                  </Text>
+                  <TouchableOpacity onPress={() => setSelectedCandidate(candidate)}>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#3b82f6', textDecorationLine: 'underline', cursor: 'pointer' }}>
+                      {candidate.name}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
                 <View
                   style={{
@@ -160,6 +164,13 @@ export default function CandidateRanking({ candidates, criteria }: CandidateRank
           );
         })}
       </View>
+
+      <PDFModal
+        isOpen={!!selectedCandidate}
+        onClose={() => setSelectedCandidate(null)}
+        pdfUrl={selectedCandidate?.blobUrl || ''}
+        candidateName={selectedCandidate?.name || ''}
+      />
     </View>
   );
 }

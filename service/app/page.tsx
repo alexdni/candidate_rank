@@ -12,32 +12,22 @@ export interface Candidate {
   criteria: Record<string, boolean>;
   summary: string;
   qualificationsCount: number;
+  blobUrl?: string;
 }
 
 const DEFAULT_CRITERIA: Criterion[] = [
   {
-    id: 'react_native',
-    name: 'React Native',
-    description: 'Must have explicit React Native experience (not just React/JavaScript)',
-    keywords: ['react native', 'react-native'],
-  },
-  {
-    id: 'eeg_ekg_dsp',
-    name: 'EEG/EKG/DSP',
-    description: 'Signal processing experience with medical applications (EEG, EKG, biomedical signals)',
-    keywords: ['eeg', 'ekg', 'electrocardiogram', 'electroencephalogram', 'signal processing', 'dsp'],
-  },
-  {
-    id: 'biomedical',
-    name: 'Biomedical Engineering',
-    description: 'Biomedical engineering degree, medical device development, or clinical experience',
-    keywords: ['biomedical engineering', 'medical device', 'fda regulations', 'clinical trial'],
+    id: 'criterion_1',
+    name: '',
+    description: '',
+    keywords: [],
   },
 ];
 
 export default function Home() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentlyProcessing, setCurrentlyProcessing] = useState<string>('');
   const [criteria, setCriteria] = useState<Criterion[]>(DEFAULT_CRITERIA);
 
   const handleFilesUploaded = async (files: File[]) => {
@@ -46,6 +36,8 @@ export default function Home() {
 
     for (const file of files) {
       try {
+        setCurrentlyProcessing(file.name);
+
         // Convert file to base64
         const fileData = await fileToBase64(file);
 
@@ -64,6 +56,8 @@ export default function Home() {
           continue;
         }
 
+        const uploadData = await uploadResponse.json();
+
         // Analyze resume
         const analyzeResponse = await fetch('/api/analyze', {
           method: 'POST',
@@ -77,7 +71,7 @@ export default function Home() {
 
         if (analyzeResponse.ok) {
           const candidate = await analyzeResponse.json();
-          newCandidates.push(candidate);
+          newCandidates.push({ ...candidate, blobUrl: uploadData.url });
         } else {
           console.error(`Failed to analyze ${file.name}`);
         }
@@ -88,6 +82,7 @@ export default function Home() {
 
     setCandidates(prev => [...prev, ...newCandidates]);
     setIsProcessing(false);
+    setCurrentlyProcessing('');
   };
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -107,11 +102,17 @@ export default function Home() {
     <ScrollView style={{ flex: 1 }}>
       <View style={{ maxWidth: 1200, marginHorizontal: 'auto', width: '100%', padding: 24 }}>
         <View style={{ marginBottom: 32 }}>
-          <Text style={{ fontSize: 36, fontWeight: 'bold', color: '#1f2937', marginBottom: 8 }}>
-            Resume Screening System
-          </Text>
-          <Text style={{ fontSize: 18, color: '#6b7280' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <img src="/logo.svg" alt="Logo" style={{ width: 48, height: 48, marginRight: 16 }} />
+            <Text style={{ fontSize: 36, fontWeight: 'bold', color: '#1f2937' }}>
+              Resume Screening System
+            </Text>
+          </View>
+          <Text style={{ fontSize: 18, color: '#6b7280', marginBottom: 4 }}>
             Define your screening criteria and upload resumes to analyze candidates
+          </Text>
+          <Text style={{ fontSize: 14, color: '#9ca3af', fontStyle: 'italic' }}>
+            An Alex Ni production
           </Text>
         </View>
 
@@ -122,9 +123,14 @@ export default function Home() {
         {isProcessing && (
           <View style={{ marginTop: 24, alignItems: 'center', padding: 16, backgroundColor: '#eff6ff', borderRadius: 8 }}>
             <ActivityIndicator size="large" color="#3b82f6" />
-            <Text style={{ marginTop: 12, color: '#1e40af', fontSize: 16 }}>
-              Processing resumes...
+            <Text style={{ marginTop: 12, color: '#1e40af', fontSize: 16, fontWeight: '600' }}>
+              Analyzing resume...
             </Text>
+            {currentlyProcessing && (
+              <Text style={{ marginTop: 8, color: '#3b82f6', fontSize: 14 }}>
+                📄 {currentlyProcessing}
+              </Text>
+            )}
           </View>
         )}
 
