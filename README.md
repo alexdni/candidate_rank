@@ -1,5 +1,7 @@
 # Candidate Ranking System
 
+URL: https://candidaterank.vercel.app/
+
 AI-powered resume screening system with customizable criteria for identifying qualified candidates based on your specific job requirements.
 
 ## Project Overview
@@ -258,4 +260,5 @@ MIT
 
 ## Author
 @alexdni
+
 
