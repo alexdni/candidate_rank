@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd service && npm run build",
+  "installCommand": "cd service && npm install"
+}
