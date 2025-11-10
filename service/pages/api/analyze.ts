@@ -15,6 +15,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   try {
     const { filename, fileData, criteria } = req.body;
 
@@ -31,15 +33,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const buffer = Buffer.from(base64Data, 'base64');
 
     // Extract text from PDF
-    const text = await extractTextFromPDF(buffer);
+    let text: string;
+    try {
+      text = await extractTextFromPDF(buffer);
+    } catch (pdfError: any) {
+      console.error('PDF extraction error:', pdfError);
+      return res.status(500).json({
+        error: 'Failed to extract text from PDF',
+        details: isDevelopment ? pdfError.message : undefined,
+      });
+    }
 
     if (!text.trim()) {
       return res.status(400).json({ error: 'No text could be extracted from PDF' });
     }
 
     // Analyze resume
-    let analysis = await analyzeResume(text, criteria as Criterion[]);
-    analysis = validateAnalysis(text, analysis, criteria as Criterion[]);
+    let analysis;
+    try {
+      analysis = await analyzeResume(text, criteria as Criterion[]);
+      analysis = validateAnalysis(text, analysis, criteria as Criterion[]);
+    } catch (aiError: any) {
+      console.error('AI analysis error:', aiError);
+      return res.status(500).json({
+        error: 'Failed to analyze resume with AI',
+        details: isDevelopment ? aiError.message : undefined,
+        hint: isDevelopment && aiError.message?.includes('API key')
+          ? 'ANTHROPIC_API_KEY environment variable may not be set or is invalid.'
+          : undefined
+      });
+    }
 
     // Create candidate result
     const candidate: CandidateResult = {
@@ -50,8 +73,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     return res.status(200).json(candidate);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Analysis error:', error);
-    return res.status(500).json({ error: 'Failed to analyze resume' });
+    return res.status(500).json({
+      error: 'Failed to analyze resume',
+      details: isDevelopment ? error.message : undefined,
+    });
   }
 }

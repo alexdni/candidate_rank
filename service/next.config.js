@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
       'react-native$': 'react-native-web',
@@ -12,6 +12,15 @@ const nextConfig = {
       '.web.tsx',
       ...config.resolve.extensions,
     ];
+
+    // Ignore pdf-parse test files during build
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        'canvas': 'commonjs canvas',
+      });
+    }
+
     return config;
   },
 };

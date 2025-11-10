@@ -19,8 +19,12 @@ export interface CandidateResult {
   qualificationsCount: number;
 }
 
+// Configure OpenAI client based on environment
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: isDevelopment ? 'lm-studio' : process.env.OPENAI_API_KEY,
+  baseURL: isDevelopment ? 'http://127.0.0.1:1234/v1' : undefined,
 });
 
 function parseJSONResponse(responseText: string): ResumeAnalysis {
@@ -69,7 +73,7 @@ ${text}
 `;
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: isDevelopment ? 'openai/gpt-oss-20b' : 'gpt-4o-mini',
     messages: [
       {
         role: 'system',

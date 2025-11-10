@@ -15,6 +15,7 @@ env/
 venv/
 ENV/
 .venv
+resume-env/
 
 # IDEs
 .vscode/
@@ -29,3 +30,4 @@ Thumbs.db
 
 # Logs
 *.log
+.gitignore
