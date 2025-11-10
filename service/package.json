@@ -8,6 +8,9 @@
     "start": "next start"
   },
   "dependencies": {
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.80.0",
     "@vercel/blob": "^0.23.4",
     "next": "^14.2.0",
     "openai": "^4.68.0",
