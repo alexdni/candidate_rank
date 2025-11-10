@@ -33,8 +33,8 @@ export default function PDFModal({ isOpen, onClose, pdfUrl, candidateName }: PDF
         style={{
           backgroundColor: 'white',
           borderRadius: 12,
-          maxWidth: 1000,
-          width: '100%',
+          maxWidth: 1400,
+          width: '95%',
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',

@@ -91,6 +91,7 @@ export default function CandidateRanking({ candidates, criteria }: CandidateRank
           Ranked Candidates
         </Text>
 
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
         {sortedCandidates.map((candidate, index) => {
           const totalCriteria = criteria.length;
           const isTopCandidate = candidate.qualificationsCount === totalCriteria;
@@ -100,11 +101,13 @@ export default function CandidateRanking({ candidates, criteria }: CandidateRank
             <View
               key={index}
               style={{
+                flex: 1,
+                minWidth: 400,
+                maxWidth: '50%',
                 borderWidth: 1,
                 borderColor: isTopCandidate ? '#10b981' : isStrongCandidate ? '#f59e0b' : '#e5e7eb',
                 borderRadius: 8,
                 padding: 16,
-                marginBottom: 12,
                 backgroundColor: isTopCandidate ? '#f0fdf4' : isStrongCandidate ? '#fffbeb' : 'white',
               }}
             >
@@ -163,6 +166,7 @@ export default function CandidateRanking({ candidates, criteria }: CandidateRank
             </View>
           );
         })}
+        </View>
       </View>
 
       <PDFModal
