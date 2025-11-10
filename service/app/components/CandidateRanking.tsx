@@ -1,10 +1,21 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native-web';
 import { Candidate } from '../page';
 import { Criterion } from '@/lib/resumeAnalyzer';
 import PDFModal from './PDFModal';
+
+// Import PDF viewer dynamically to avoid SSR issues
+const HighlightedPDFViewer = dynamic(() => import('./HighlightedPDFViewer'), {
+  ssr: false,
+  loading: () => (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+      <Text style={{ color: '#6b7280' }}>Loading PDF viewer...</Text>
+    </View>
+  ),
+});
 
 interface CandidateRankingProps {
   candidates: Candidate[];
@@ -194,19 +205,11 @@ export default function CandidateRanking({ candidates, criteria }: CandidateRank
               </TouchableOpacity>
             </View>
 
-            {/* PDF Viewer */}
-            <View style={{ flex: 1, overflow: 'hidden', borderRadius: 8 }}>
-              <iframe
-                src={selectedCandidate.blobUrl}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                  minHeight: '800px',
-                }}
-                title={`Resume - ${selectedCandidate.name}`}
-              />
-            </View>
+            {/* PDF Viewer with Keyword Highlighting */}
+            <HighlightedPDFViewer
+              pdfUrl={selectedCandidate.blobUrl || ''}
+              keywords={criteria.flatMap(c => c.keywords || [])}
+            />
           </View>
         )}
       </View>
