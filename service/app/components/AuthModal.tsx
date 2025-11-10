@@ -24,6 +24,19 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
 
   const supabase = createClient()
 
+  const getRedirectUrl = () => {
+    // Always use production URL if we're on the production domain
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname
+      if (hostname === 'candidaterank.vercel.app' || hostname.endsWith('.vercel.app')) {
+        return 'https://candidaterank.vercel.app'
+      }
+      // Use env variable if set, otherwise current origin for local dev
+      return process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+    }
+    return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  }
+
   const handleEmailAuth = async () => {
     if (!email || !password) {
       setError('Email and password are required')
@@ -40,8 +53,7 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
 
     try {
       if (mode === 'signup') {
-        // Use NEXT_PUBLIC_SITE_URL for production, otherwise window.location.origin
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+        const siteUrl = getRedirectUrl()
 
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -91,8 +103,7 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
     setError(null)
 
     try {
-      // Use NEXT_PUBLIC_SITE_URL for production, otherwise window.location.origin
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      const siteUrl = getRedirectUrl()
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

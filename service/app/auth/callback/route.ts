@@ -12,8 +12,15 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
 
-  // Use NEXT_PUBLIC_SITE_URL if available, otherwise fall back to request origin
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin
+  // Determine redirect URL - always use production URL if on production domain
+  let origin = requestUrl.origin
+  const hostname = requestUrl.hostname
+
+  if (hostname === 'candidaterank.vercel.app' || hostname.endsWith('.vercel.app')) {
+    origin = 'https://candidaterank.vercel.app'
+  } else if (process.env.NEXT_PUBLIC_SITE_URL) {
+    origin = process.env.NEXT_PUBLIC_SITE_URL
+  }
 
   if (code) {
     const supabase = createClient()
