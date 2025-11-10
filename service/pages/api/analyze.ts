@@ -32,10 +32,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const base64Data = fileData.split(',')[1] || fileData;
     const buffer = Buffer.from(base64Data, 'base64');
 
-    // Extract text from PDF
+    // Extract text and URLs from PDF
     let text: string;
+    let linkedinUrl: string | undefined;
+    let githubUrl: string | undefined;
     try {
-      text = await extractTextFromPDF(buffer);
+      const extraction = await extractTextFromPDF(buffer);
+      text = extraction.text;
+      linkedinUrl = extraction.linkedinUrl;
+      githubUrl = extraction.githubUrl;
     } catch (pdfError: any) {
       console.error('PDF extraction error:', pdfError);
       return res.status(500).json({
@@ -70,6 +75,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       criteria: analysis.criteria,
       summary: analysis.summary,
       qualificationsCount: calculateQualificationsCount(analysis.criteria),
+      linkedinUrl,
+      githubUrl,
     };
 
     return res.status(200).json(candidate);

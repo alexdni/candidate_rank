@@ -106,7 +106,7 @@ export async function POST(
 
     // Parse request body
     const body = await request.json()
-    const { filename, blob_url, analysis_result } = body
+    const { filename, blob_url, analysis_result, linkedin_url, github_url } = body
 
     // Validation
     if (!filename || typeof filename !== 'string') {
@@ -129,6 +129,8 @@ export async function POST(
       filename,
       blob_url,
       analysis_result: analysis_result || null,
+      linkedin_url: linkedin_url || null,
+      github_url: github_url || null,
     }
 
     const { data: resume, error } = await supabase

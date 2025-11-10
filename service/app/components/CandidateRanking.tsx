@@ -24,11 +24,93 @@ interface CandidateRankingProps {
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
 
+function getScoreColor(score: number | undefined): string {
+  if (!score) return '#6b7280';
+  if (score >= 75) return '#10b981'; // green
+  if (score >= 50) return '#f59e0b'; // yellow
+  return '#6b7280'; // gray
+}
+
 export default function CandidateRanking({ candidates, criteria }: CandidateRankingProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
-  const sortedCandidates = useMemo(() => {
-    return [...candidates].sort((a, b) => b.qualificationsCount - a.qualificationsCount);
+  const [localCandidates, setLocalCandidates] = useState<Candidate[]>(candidates);
+
+  // Update local candidates when props change
+  useMemo(() => {
+    setLocalCandidates(candidates);
   }, [candidates]);
+
+  const sortedCandidates = useMemo(() => {
+    return [...localCandidates].sort((a, b) => b.qualificationsCount - a.qualificationsCount);
+  }, [localCandidates]);
+
+  const handleVerify = async (candidate: Candidate) => {
+    // Set status to pending
+    setLocalCandidates(prev =>
+      prev.map(c =>
+        c.name === candidate.name
+          ? { ...c, verificationStatus: 'pending' as const }
+          : c
+      )
+    );
+
+    try {
+      const response = await fetch('/api/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          linkedinUrl: candidate.linkedinUrl,
+          githubUrl: candidate.githubUrl,
+          keywords: criteria.flatMap(c => c.keywords || []),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.verificationStatus === 'verified') {
+        // Update with verification results
+        setLocalCandidates(prev =>
+          prev.map(c =>
+            c.name === candidate.name
+              ? {
+                  ...c,
+                  verificationStatus: 'verified' as const,
+                  verificationScore: result.verificationScore,
+                  verificationDetails: result.verificationDetails,
+                }
+              : c
+          )
+        );
+      } else {
+        // Verification failed
+        setLocalCandidates(prev =>
+          prev.map(c =>
+            c.name === candidate.name
+              ? {
+                  ...c,
+                  verificationStatus: 'failed' as const,
+                  verificationDetails: { errors: [result.error || 'Verification failed'] },
+                }
+              : c
+          )
+        );
+      }
+    } catch (error: any) {
+      console.error('Verification error:', error);
+      // Update with error status
+      setLocalCandidates(prev =>
+        prev.map(c =>
+          c.name === candidate.name
+            ? {
+                ...c,
+                verificationStatus: 'failed' as const,
+                verificationDetails: { errors: [error.message || 'Network error'] },
+              }
+            : c
+        )
+      );
+    }
+  };
 
   const criteriaStats = useMemo(() => {
     return criteria.map(criterion => ({
@@ -171,10 +253,55 @@ export default function CandidateRanking({ candidates, criteria }: CandidateRank
                 ))}
               </View>
 
-              <View style={{ backgroundColor: '#f9fafb', padding: 12, borderRadius: 6 }}>
+              <View style={{ backgroundColor: '#f9fafb', padding: 12, borderRadius: 6, marginBottom: 12 }}>
                 <Text style={{ fontSize: 14, color: '#4b5563', lineHeight: 20 }}>
                   {candidate.summary}
                 </Text>
+              </View>
+
+              {/* Verification Section */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                {/* Verify Button */}
+                {(candidate.linkedinUrl || candidate.githubUrl) && (
+                  <TouchableOpacity
+                    onPress={() => handleVerify(candidate)}
+                    disabled={candidate.verificationStatus === 'pending'}
+                    style={{
+                      backgroundColor: candidate.verificationStatus === 'pending' ? '#9ca3af' : '#3b82f6',
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 6,
+                      opacity: candidate.verificationStatus === 'pending' ? 0.6 : 1,
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>
+                      {candidate.verificationStatus === 'pending' ? 'Verifying...' : 'Verify'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Verification Badge */}
+                {candidate.verificationStatus === 'verified' && candidate.verificationScore !== undefined && (
+                  <View
+                    style={{
+                      backgroundColor: getScoreColor(candidate.verificationScore),
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      borderRadius: 6,
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
+                      ✓ Verified {candidate.verificationScore}/100
+                    </Text>
+                  </View>
+                )}
+
+                {/* Error Message */}
+                {candidate.verificationStatus === 'failed' && (
+                  <Text style={{ color: '#ef4444', fontSize: 13 }}>
+                    Unable to verify{candidate.verificationDetails?.errors?.[0] ? `: ${candidate.verificationDetails.errors[0]}` : ''}
+                  </Text>
+                )}
               </View>
             </View>
           );

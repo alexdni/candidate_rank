@@ -17,6 +17,8 @@ export interface CandidateResult {
   criteria: Record<string, boolean>;
   summary: string;
   qualificationsCount: number;
+  linkedinUrl?: string;
+  githubUrl?: string;
 }
 
 // Configure OpenAI client based on environment

@@ -4,10 +4,38 @@ const TEXT_EXTRACT_LIMIT = 15000;
 
 interface PDFExtractionResult {
   text: string;
-  skipFirstPage: boolean;
+  linkedinUrl?: string;
+  githubUrl?: string;
 }
 
-export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+const LINKEDIN_REGEX = /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/([\w-]+)/gi;
+const GITHUB_REGEX = /(?:https?:\/\/)?(?:www\.)?github\.com\/([\w-]+)/gi;
+
+function extractUrls(text: string): { linkedinUrl?: string; githubUrl?: string } {
+  let linkedinUrl: string | undefined;
+  let githubUrl: string | undefined;
+
+  // Extract LinkedIn URL
+  const linkedinMatch = LINKEDIN_REGEX.exec(text);
+  if (linkedinMatch) {
+    const username = linkedinMatch[1];
+    linkedinUrl = `https://linkedin.com/in/${username}`;
+  }
+
+  // Reset regex index
+  GITHUB_REGEX.lastIndex = 0;
+
+  // Extract GitHub URL (extract username from full URL or repo URL)
+  const githubMatch = GITHUB_REGEX.exec(text);
+  if (githubMatch) {
+    const username = githubMatch[1];
+    githubUrl = `https://github.com/${username}`;
+  }
+
+  return { linkedinUrl, githubUrl };
+}
+
+export async function extractTextFromPDF(buffer: Buffer): Promise<PDFExtractionResult> {
   try {
     const data = await pdf(buffer);
     const fullText = data.text;
@@ -36,7 +64,13 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
       extractedText = fullText.substring(estimatedFirstPageLength);
     }
 
-    return extractedText.substring(0, TEXT_EXTRACT_LIMIT);
+    const text = extractedText.substring(0, TEXT_EXTRACT_LIMIT);
+    const urls = extractUrls(fullText); // Extract URLs from full text before truncation
+
+    return {
+      text,
+      ...urls,
+    };
   } catch (error) {
     console.error('PDF extraction error:', error);
     throw new Error('Failed to extract text from PDF');

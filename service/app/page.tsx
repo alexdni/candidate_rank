@@ -17,6 +17,11 @@ export interface Candidate {
   summary: string;
   qualificationsCount: number;
   blobUrl?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  verificationStatus?: 'unverified' | 'pending' | 'verified' | 'failed';
+  verificationScore?: number;
+  verificationDetails?: any; // Will be typed properly later
 }
 
 const DEFAULT_CRITERIA: Criterion[] = [
@@ -55,6 +60,11 @@ export default function Home() {
         summary: resume.analysis_result?.summary || '',
         qualificationsCount: resume.analysis_result?.qualificationsCount || 0,
         blobUrl: resume.blob_url,
+        linkedinUrl: resume.linkedin_url || undefined,
+        githubUrl: resume.github_url || undefined,
+        verificationStatus: resume.verification_result ? ('verified' as const) : ('unverified' as const),
+        verificationScore: resume.verification_result?.overallScore,
+        verificationDetails: resume.verification_result,
       }));
       setCandidates(loadedCandidates);
     } else if (activeProfile) {
@@ -115,6 +125,8 @@ export default function Home() {
                 body: JSON.stringify({
                   filename: file.name,
                   blob_url: uploadData.url,
+                  linkedin_url: candidate.linkedinUrl,
+                  github_url: candidate.githubUrl,
                   analysis_result: {
                     criteria: candidate.criteria,
                     summary: candidate.summary,

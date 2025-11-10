@@ -24,6 +24,10 @@ export interface Resume {
     summary: string
     qualificationsCount?: number
   } | null
+  linkedin_url?: string | null
+  github_url?: string | null
+  verification_result?: any | null
+  verified_at?: string | null
   uploaded_at: string
 }
 
