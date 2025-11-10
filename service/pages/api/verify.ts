@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { verifyProfile, VerificationDetails } from '@/lib/profileVerifier';
 import { createClient } from '@/lib/supabase/server';
+import { extractTextFromPDF } from '@/lib/pdfExtractor';
 
 export const config = {
   api: {
@@ -18,12 +19,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   try {
-    const { linkedinUrl, githubUrl, keywords, resumeId } = req.body;
+    let { linkedinUrl, githubUrl, keywords, resumeId, blobUrl } = req.body;
+
+    // If URLs are missing but we have a blobUrl, try to extract them from the PDF
+    if ((!linkedinUrl && !githubUrl) && blobUrl) {
+      try {
+        console.log(`[Verify] No URLs provided, fetching PDF from ${blobUrl} to extract URLs`);
+
+        // Fetch the PDF from blob storage
+        const pdfResponse = await fetch(blobUrl);
+        if (!pdfResponse.ok) {
+          throw new Error('Failed to fetch PDF from blob storage');
+        }
+
+        const arrayBuffer = await pdfResponse.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Extract text and URLs from PDF
+        const extraction = await extractTextFromPDF(buffer);
+        linkedinUrl = extraction.linkedinUrl;
+        githubUrl = extraction.githubUrl;
+
+        console.log(`[Verify] Extracted URLs from PDF: LinkedIn=${linkedinUrl}, GitHub=${githubUrl}`);
+      } catch (extractError: any) {
+        console.error('[Verify] Error extracting URLs from PDF:', extractError);
+        // Continue - will fail validation below if still no URLs
+      }
+    }
 
     // Validation
     if (!linkedinUrl && !githubUrl) {
       return res.status(400).json({
-        error: 'No LinkedIn or GitHub URLs found',
+        error: 'No LinkedIn or GitHub URLs found in resume',
         verificationStatus: 'failed',
       });
     }

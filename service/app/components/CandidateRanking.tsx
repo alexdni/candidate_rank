@@ -61,6 +61,7 @@ export default function CandidateRanking({ candidates, criteria }: CandidateRank
         body: JSON.stringify({
           linkedinUrl: candidate.linkedinUrl,
           githubUrl: candidate.githubUrl,
+          blobUrl: candidate.blobUrl, // Pass blobUrl so API can extract URLs if needed
           keywords: criteria.flatMap(c => c.keywords || []),
         }),
       });
@@ -261,24 +262,22 @@ export default function CandidateRanking({ candidates, criteria }: CandidateRank
 
               {/* Verification Section */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                {/* Verify Button */}
-                {(candidate.linkedinUrl || candidate.githubUrl) && (
-                  <TouchableOpacity
-                    onPress={() => handleVerify(candidate)}
-                    disabled={candidate.verificationStatus === 'pending'}
-                    style={{
-                      backgroundColor: candidate.verificationStatus === 'pending' ? '#9ca3af' : '#3b82f6',
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 6,
-                      opacity: candidate.verificationStatus === 'pending' ? 0.6 : 1,
-                    }}
-                  >
-                    <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>
-                      {candidate.verificationStatus === 'pending' ? 'Verifying...' : 'Verify'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                {/* Verify Button - show on all candidates */}
+                <TouchableOpacity
+                  onPress={() => handleVerify(candidate)}
+                  disabled={candidate.verificationStatus === 'pending'}
+                  style={{
+                    backgroundColor: candidate.verificationStatus === 'pending' ? '#9ca3af' : '#3b82f6',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 6,
+                    opacity: candidate.verificationStatus === 'pending' ? 0.6 : 1,
+                  }}
+                >
+                  <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>
+                    {candidate.verificationStatus === 'pending' ? 'Verifying...' : 'Verify Profile'}
+                  </Text>
+                </TouchableOpacity>
 
                 {/* Verification Badge */}
                 {candidate.verificationStatus === 'verified' && candidate.verificationScore !== undefined && (
