@@ -40,11 +40,14 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
 
     try {
       if (mode === 'signup') {
+        // Use NEXT_PUBLIC_SITE_URL for production, otherwise window.location.origin
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: `${siteUrl}/auth/callback`,
           },
         })
 
@@ -88,10 +91,13 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
     setError(null)
 
     try {
+      // Use NEXT_PUBLIC_SITE_URL for production, otherwise window.location.origin
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${siteUrl}/auth/callback`,
         },
       })
 
