@@ -85,14 +85,16 @@ export default function CandidateRanking({ candidates, criteria }: CandidateRank
         </View>
       </View>
 
-      {/* Candidate List */}
-      <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 24, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 2 } }}>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: '#1f2937', marginBottom: 16 }}>
-          Ranked Candidates
-        </Text>
+      {/* Main Content: Candidate List + Resume Viewer */}
+      <View style={{ flexDirection: 'row', gap: 24 }}>
+        {/* Candidate List */}
+        <View style={{ flex: selectedCandidate ? 1 : 1, backgroundColor: 'white', borderRadius: 12, padding: 24, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 2 } }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#1f2937', marginBottom: 16 }}>
+            Ranked Candidates
+          </Text>
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
-        {sortedCandidates.map((candidate, index) => {
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+          {sortedCandidates.map((candidate, index) => {
           const totalCriteria = criteria.length;
           const isTopCandidate = candidate.qualificationsCount === totalCriteria;
           const isStrongCandidate = candidate.qualificationsCount >= Math.ceil(totalCriteria / 2);
@@ -166,15 +168,48 @@ export default function CandidateRanking({ candidates, criteria }: CandidateRank
             </View>
           );
         })}
+          </View>
         </View>
-      </View>
 
-      <PDFModal
-        isOpen={!!selectedCandidate}
-        onClose={() => setSelectedCandidate(null)}
-        pdfUrl={selectedCandidate?.blobUrl || ''}
-        candidateName={selectedCandidate?.name || ''}
-      />
+        {/* Resume Viewer Panel */}
+        {selectedCandidate && (
+          <View style={{ flex: 1, backgroundColor: 'white', borderRadius: 12, padding: 16, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, display: 'flex', flexDirection: 'column' }}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: '#1f2937' }}>
+                {selectedCandidate.name}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setSelectedCandidate(null)}
+                style={{
+                  backgroundColor: '#f3f4f6',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 18, color: '#6b7280', fontWeight: 'bold' }}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* PDF Viewer */}
+            <View style={{ flex: 1, overflow: 'hidden', borderRadius: 8 }}>
+              <iframe
+                src={selectedCandidate.blobUrl}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                  minHeight: '800px',
+                }}
+                title={`Resume - ${selectedCandidate.name}`}
+              />
+            </View>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
