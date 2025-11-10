@@ -25,16 +25,8 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
   const supabase = createClient()
 
   const getRedirectUrl = () => {
-    // Always use production URL if we're on the production domain
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname
-      if (hostname === 'candidaterank.vercel.app' || hostname.endsWith('.vercel.app')) {
-        return 'https://candidaterank.vercel.app'
-      }
-      // Use env variable if set, otherwise current origin for local dev
-      return process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-    }
-    return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    // Always use production URL - hardcoded to ensure consistency
+    return 'https://candidaterank.vercel.app'
   }
 
   const handleEmailAuth = async () => {
