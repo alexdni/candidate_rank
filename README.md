@@ -1,6 +1,6 @@
 # Candidate Ranking System
 
-URL: https://candidaterank.vercel.app/
+URL: https://[candirank.alexni.ai](https://candirank.alexni.ai/)/
 
 AI-powered resume screening system with customizable criteria for identifying qualified candidates based on your specific job requirements.
 
@@ -260,5 +260,6 @@ MIT
 
 ## Author
 @alexdni
+
 
 
